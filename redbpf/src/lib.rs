@@ -55,7 +55,7 @@ pub mod xdp;
 
 pub use bpf_sys::uname;
 use bpf_sys::{
-    bpf_insn, bpf_map_def, bpf_probe_attach_type, bpf_probe_attach_type_BPF_PROBE_ENTRY,
+    bpf_attach_type, bpf_insn, bpf_map_def, bpf_probe_attach_type, bpf_probe_attach_type_BPF_PROBE_ENTRY,
     bpf_probe_attach_type_BPF_PROBE_RETURN, bpf_prog_type,
 };
 use goblin::elf::{reloc::RelocSection, section_header as hdr, Elf, SectionHeader, Sym};
@@ -513,6 +513,17 @@ impl Drop for XDP {
 }
 
 impl SkSkb {
+    /// Attach the sk_skb program to a map.
+    pub fn attach_map(&mut self, map: &Map, attach_type: bpf_attach_type, flags: u32) -> Result<()> {
+        let fd = self.common.fd.ok_or(Error::ProgramNotLoaded)?;
+        let map_fd = map.fd;
+
+        match unsafe { bpf_sys::bpf_prog_attach(fd, map_fd, attach_type, flags) } {
+            r if r < 0 => Err(Error::IO(io::Error::last_os_error())),
+            _ => Ok(()),
+        }
+    }
+
     pub fn name(&self) -> String {
         self.common.name.to_string()
     }
