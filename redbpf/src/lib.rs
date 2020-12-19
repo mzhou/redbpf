@@ -97,6 +97,7 @@ pub enum Program {
     KRetProbe(KProbe),
     UProbe(UProbe),
     URetProbe(UProbe),
+    SkSkb(SkSkb),
     SocketFilter(SocketFilter),
     TracePoint(TracePoint),
     XDP(XDP),
@@ -118,6 +119,11 @@ pub struct KProbe {
 pub struct UProbe {
     common: ProgramData,
     attach_type: bpf_probe_attach_type,
+}
+
+/// Type to work with `sk_skbs`.
+pub struct SkSkb {
+    common: ProgramData,
 }
 
 /// Type to work with `socket filters`.
@@ -207,6 +213,7 @@ impl Program {
                 attach_type: bpf_probe_attach_type_BPF_PROBE_RETURN,
             }),
             "tracepoint" => Program::TracePoint(TracePoint { common }),
+            "sk_skb" => Program::SkSkb(SkSkb { common }),
             "socketfilter" => Program::SocketFilter(SocketFilter { common }),
             "xdp" => Program::XDP(XDP {
                 common,
@@ -224,6 +231,7 @@ impl Program {
                 bpf_sys::bpf_prog_type_BPF_PROG_TYPE_KPROBE
             }
             XDP(_) => bpf_sys::bpf_prog_type_BPF_PROG_TYPE_XDP,
+            SkSkb(_) => bpf_sys::bpf_prog_type_BPF_PROG_TYPE_SK_SKB,
             SocketFilter(_) => bpf_sys::bpf_prog_type_BPF_PROG_TYPE_SOCKET_FILTER,
             TracePoint(_) => bpf_sys::bpf_prog_type_BPF_PROG_TYPE_TRACEPOINT,
         }
@@ -236,6 +244,7 @@ impl Program {
             KProbe(p) | KRetProbe(p) => &p.common,
             UProbe(p) | URetProbe(p) => &p.common,
             XDP(p) => &p.common,
+            SkSkb(p) => &p.common,
             SocketFilter(p) => &p.common,
             TracePoint(p) => &p.common,
         }
@@ -248,6 +257,7 @@ impl Program {
             KProbe(p) | KRetProbe(p) => &mut p.common,
             UProbe(p) | URetProbe(p) => &mut p.common,
             XDP(p) => &mut p.common,
+            SkSkb(p) => &mut p.common,
             SocketFilter(p) => &mut p.common,
             TracePoint(p) => &mut p.common,
         }
@@ -502,6 +512,12 @@ impl Drop for XDP {
     }
 }
 
+impl SkSkb {
+    pub fn name(&self) -> String {
+        self.common.name.to_string()
+    }
+}
+
 impl SocketFilter {
     /// Attach the socket filter program.
     ///
@@ -589,6 +605,7 @@ impl Module {
                 | (hdr::SHT_PROGBITS, Some(kind @ "uprobe"), Some(name))
                 | (hdr::SHT_PROGBITS, Some(kind @ "uretprobe"), Some(name))
                 | (hdr::SHT_PROGBITS, Some(kind @ "xdp"), Some(name))
+                | (hdr::SHT_PROGBITS, Some(kind @ "sk_skb"), Some(name))
                 | (hdr::SHT_PROGBITS, Some(kind @ "socketfilter"), Some(name)) => {
                     programs.insert(shndx, Program::new(kind, name, &content)?);
                 }
@@ -669,6 +686,14 @@ impl Module {
         use Program::*;
         self.programs.iter().filter_map(|prog| match prog {
             SocketFilter(p) => Some(p),
+            _ => None,
+        })
+    }
+
+    pub fn sk_skbs_mut(&mut self) -> impl Iterator<Item = &mut SkSkb> {
+        use Program::*;
+        self.programs.iter_mut().filter_map(|prog| match prog {
+            SkSkb(p) => Some(p),
             _ => None,
         })
     }

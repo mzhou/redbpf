@@ -14,7 +14,7 @@ use std::path::Path;
 
 use crate::{Program, cpus};
 use crate::load::map_io::PerfMessageStream;
-use crate::{Error, KProbe, Map, Module, PerfMap, SocketFilter, UProbe, XDP};
+use crate::{Error, KProbe, Map, Module, PerfMap, SkSkb, SocketFilter, UProbe, XDP};
 
 #[derive(Debug)]
 pub enum LoaderError {
@@ -115,6 +115,10 @@ impl Loaded {
 
     pub fn xdps_mut(&mut self) -> impl Iterator<Item = &mut XDP> {
         self.module.xdps_mut()
+    }
+
+    pub fn sk_skbs_mut(&mut self) -> impl Iterator<Item = &mut SkSkb> {
+        self.module.sk_skbs_mut()
     }
 
     pub fn socket_filters_mut(&mut self) -> impl Iterator<Item = &mut SocketFilter> {
