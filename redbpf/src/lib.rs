@@ -514,7 +514,7 @@ impl Drop for XDP {
 
 impl SkSkb {
     /// Attach the sk_skb program to a map.
-    pub fn attach_map(&mut self, map: &Map, attach_type: bpf_attach_type, flags: u32) -> Result<()> {
+    pub fn attach_map(&self, map: &Map, attach_type: bpf_attach_type, flags: u32) -> Result<()> {
         let fd = self.common.fd.ok_or(Error::ProgramNotLoaded)?;
         let map_fd = map.fd;
 
@@ -693,10 +693,10 @@ impl Module {
         })
     }
 
-    pub fn socket_filters(&self) -> impl Iterator<Item = &SocketFilter> {
+    pub fn sk_skbs(&self) -> impl Iterator<Item = &SkSkb> {
         use Program::*;
         self.programs.iter().filter_map(|prog| match prog {
-            SocketFilter(p) => Some(p),
+            SkSkb(p) => Some(p),
             _ => None,
         })
     }
@@ -705,6 +705,14 @@ impl Module {
         use Program::*;
         self.programs.iter_mut().filter_map(|prog| match prog {
             SkSkb(p) => Some(p),
+            _ => None,
+        })
+    }
+
+    pub fn socket_filters(&self) -> impl Iterator<Item = &SocketFilter> {
+        use Program::*;
+        self.programs.iter().filter_map(|prog| match prog {
+            SocketFilter(p) => Some(p),
             _ => None,
         })
     }

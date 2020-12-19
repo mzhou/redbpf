@@ -117,6 +117,10 @@ impl Loaded {
         self.module.xdps_mut()
     }
 
+    pub fn sk_skbs(&self) -> impl Iterator<Item = &SkSkb> {
+        self.module.sk_skbs()
+    }
+
     pub fn sk_skbs_mut(&mut self) -> impl Iterator<Item = &mut SkSkb> {
         self.module.sk_skbs_mut()
     }
