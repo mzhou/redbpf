@@ -306,9 +306,41 @@ impl ProgramArray {
     }
 }
 
+/// Sockhash.
+///
+/// High level API for BPF_MAP_TYPE_SOCKHASH maps.
+#[repr(transparent)]
+pub struct SockHash<K, V> {
+    def: bpf_map_def,
+    _k: PhantomData<K>,
+    _v: PhantomData<V>,
+}
+
+impl<K, V> SockHash<K, V> {
+    /// Creates a map with the specified maximum number of elements.
+    pub const fn with_max_entries(max_entries: u32) -> Self {
+        Self {
+            def: bpf_map_def {
+                type_: bpf_map_type_BPF_MAP_TYPE_SOCKHASH,
+                key_size: mem::size_of::<K>() as u32,
+                value_size: mem::size_of::<V>() as u32,
+                max_entries,
+                map_flags: 0,
+            },
+            _k: PhantomData,
+            _v: PhantomData,
+        }
+    }
+
+    /// Get the definition
+    pub unsafe fn get_def_mut(self: &mut Self) -> *mut bpf_map_def {
+        &mut self.def as *mut bpf_map_def
+    }
+}
+
 /// Sockmap.
 ///
-/// High level API for BPF_MAP_TYPE_SOCK maps.
+/// High level API for BPF_MAP_TYPE_SOCKMAP maps.
 #[repr(transparent)]
 pub struct SockMap<K, V> {
     def: bpf_map_def,
